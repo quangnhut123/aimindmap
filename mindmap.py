@@ -329,10 +329,10 @@ class MindMap:
                 graph.edge(a, b, dir="both")
             for n in self.nodes:
                 graph.node(n, style="filled", fillcolor=FOCUS_COLOR if n == selected else COLOR)
-            #st.graphviz_chart(graph, use_container_width=True)
-            b64 = base64.b64encode(graph.pipe(format='svg')).decode("utf-8")
-            html = f"<img style='width: 100%' src='data:image/svg+xml;base64,{b64}'/>"
-            st.write(html, unsafe_allow_html=True)
+            st.graphviz_chart(graph, use_container_width=True)
+            # b64 = base64.b64encode(graph.pipe(format='svg')).decode("utf-8")
+            # html = f"<img style='width: 100%' src='data:image/svg+xml;base64,{b64}'/>"
+            # st.write(html, unsafe_allow_html=True)
         # sort alphabetically
         for node in sorted(self.nodes):
             self._add_expand_delete_buttons(node)
