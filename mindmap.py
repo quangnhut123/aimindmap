@@ -15,6 +15,15 @@ from textwrap import dedent
 from streamlit_agraph import agraph, Node, Edge, Config
 # set title of page (will be seen in tab) and the width
 st.set_page_config(page_title="AI Mind Maps", layout="wide")
+# Remove Streamlit footer
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 COLOR = "cyan"
 FOCUS_COLOR = "red"
