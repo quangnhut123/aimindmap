@@ -27,6 +27,7 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 COLOR = "orange"
 FOCUS_COLOR = "green"
+OPENAI_MODEL = "gpt-4"
 
 openai.api_key = st.secrets["openai_api_key"]
 
@@ -93,7 +94,7 @@ START_CONVERSATION = [
 
 def ask_chatgpt(conversation: List[Message]) -> Tuple[str, List[Message]]:
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model = OPENAI_MODEL,
         # asdict comes from `from dataclasses import asdict`
         messages=[asdict(c) for c in conversation]
     )
