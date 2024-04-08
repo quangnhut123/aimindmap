@@ -25,8 +25,8 @@ hide_streamlit_style = """
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-COLOR = "cyan"
-FOCUS_COLOR = "red"
+COLOR = "orange"
+FOCUS_COLOR = "green"
 
 openai.api_key = st.secrets["openai_api_key"]
 
@@ -324,7 +324,7 @@ class MindMap:
             st.pyplot(fig)
         else: # graph_type == "graphviz":
             graph = graphviz.Graph()
-            graph.attr(rankdir='LR')
+            graph.attr(rankdir='TB')
             for a, b in self.edges:
                 graph.edge(a, b, dir="both")
             for n in self.nodes:
@@ -372,7 +372,7 @@ def main():
                 mindmap.ask_for_extended_graph(text=query)
             # since inputs also have to be updated, everything
             # is rerun
-            st.experimental_rerun()
+            st.rerun()
         else:
             mindmap.visualize(graph_type)
 
