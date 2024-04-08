@@ -18,7 +18,7 @@ st.set_page_config(page_title="AI Mind Maps", layout="wide")
 COLOR = "cyan"
 FOCUS_COLOR = "red"
 
-openai.api_key = st.secrets["openai_api_key"],
+openai.api_key = st.secrets["openai_api_key"]
 
 @dataclass
 class Message:
