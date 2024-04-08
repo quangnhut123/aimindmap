@@ -8,13 +8,14 @@ import networkx as nx
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 import os
-import openai
+# import openai
+from openai import OpenAI
 import graphviz
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from textwrap import dedent
 from streamlit_agraph import agraph, Node, Edge, Config
 # set title of page (will be seen in tab) and the width
-st.set_page_config(page_title="AI Mind Maps", layout="wide")
+st.set_page_config(page_title="AI Mind Maps", page_icon=None, layout="wide")
 # Remove Streamlit footer
 hide_streamlit_style = """
             <style>
@@ -29,7 +30,10 @@ COLOR = "orange"
 FOCUS_COLOR = "green"
 OPENAI_MODEL = "gpt-4"
 
-openai.api_key = st.secrets["openai_api_key"]
+client = OpenAI(
+  api_key = st.secrets["openai_api_key"],
+)
+# OpenAI.api_key = st.secrets["openai_api_key"]
 
 @dataclass
 class Message:
@@ -93,14 +97,22 @@ START_CONVERSATION = [
 ]
 
 def ask_chatgpt(conversation: List[Message]) -> Tuple[str, List[Message]]:
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model = OPENAI_MODEL,
         temperature = 0,
-        # asdict comes from `from dataclasses import asdict`
-        messages=[asdict(c) for c in conversation]
+        messages=[{"role": c.role, "content": c.content} for c in conversation]
     )
-    # turn into a Message object
-    msg = Message(**response["choices"][0]["message"])
+    try:
+        # Attempting to access attributes directly
+        latest_message = response.choices[0].message
+    except AttributeError:
+        # Fallback or adjust based on the actual API/client library structure
+        print("Unexpected response structure:", response)
+        raise
+
+    # Create a new Message instance for the generated response
+    msg = Message(content=latest_message.content, role=latest_message.role)
+
     # return the text output and the new conversation
     return msg.content, conversation + [msg]
 
