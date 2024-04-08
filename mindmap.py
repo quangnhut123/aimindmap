@@ -95,6 +95,7 @@ START_CONVERSATION = [
 def ask_chatgpt(conversation: List[Message]) -> Tuple[str, List[Message]]:
     response = openai.ChatCompletion.create(
         model = OPENAI_MODEL,
+        temperature = 0,
         # asdict comes from `from dataclasses import asdict`
         messages=[asdict(c) for c in conversation]
     )
@@ -362,7 +363,7 @@ def main():
     if empty and not valid_submission:
         return
 
-    with st.spinner(text="Loading graph..."):
+    with st.spinner(text="Generating graph..."):
         # if submit and non-empty query, then update graph
         if valid_submission:
             if reset:
