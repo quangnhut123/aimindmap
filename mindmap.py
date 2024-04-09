@@ -8,14 +8,13 @@ import networkx as nx
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 import os
-# import openai
 from openai import OpenAI
-import graphviz
+from graphviz import Digraph, Graph
 from dataclasses import dataclass
 from textwrap import dedent
 from streamlit_agraph import agraph, Node, Edge, Config
 # set title of page (will be seen in tab) and the width
-st.set_page_config(page_title="AI Mind Maps", page_icon=None, layout="wide")
+st.set_page_config(page_title="AI Maps Generator", page_icon=None, layout="wide")
 # Remove Streamlit footer
 hide_streamlit_style = """
             <style>
@@ -33,7 +32,7 @@ OPENAI_MODEL = "gpt-4"
 client = OpenAI(
   api_key = st.secrets["openai_api_key"],
 )
-# OpenAI.api_key = st.secrets["openai_api_key"]
+
 
 @dataclass
 class Message:
@@ -115,6 +114,39 @@ def ask_chatgpt(conversation: List[Message]) -> Tuple[str, List[Message]]:
 
     # return the text output and the new conversation
     return msg.content, conversation + [msg]
+
+def ask_gpt_for_roadmap(query: str):
+    prompt = f"""
+    Based on the goal of '{query}', list up to 10 main steps in simplified form and not numbering format, suitable for use as titles in a flowchart. Focus on clear and concise titles for each step.
+    """
+    response = client.chat.completions.create(
+        model=OPENAI_MODEL,
+        temperature= 0.5,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    roadmap_text = response.choices[0].message.content
+    return roadmap_text
+
+def visualize_roadmap_as_flowchart(roadmap: str):
+    """Visualize the roadmap as a flowchart using Graphviz."""
+    steps = [step.strip() for step in roadmap.split('\n') if step.strip()]
+
+    dot = Digraph(comment='Roadmap')
+    dot.attr('node', style='filled', fillcolor='orange', fontcolor='black', shape='box')
+    dot.attr('edge', color='grey')
+
+    for i, step in enumerate(steps):
+        step = step.replace("-", "").replace('"', '').replace('.', '')
+        dot.node(str(i), step)
+        if i > 0:
+            dot.edge(str(i-1), str(i))
+
+    b64 = base64.b64encode(dot.pipe(format='svg')).decode("utf-8")
+    html = f"<img style='width: 100%' src='data:image/svg+xml;base64,{b64}'/>"
+    st.write(html, unsafe_allow_html=True)
 
 class MindMap:
     """A class that represents a mind map as a graph.
@@ -337,38 +369,39 @@ class MindMap:
             nx.draw(graph, pos=pos, node_color=colors, with_labels=True)
             st.pyplot(fig)
         else: # graph_type == "graphviz":
-            graph = graphviz.Graph()
+            graph = Graph()
             graph.attr(rankdir='TB')
             for a, b in self.edges:
                 graph.edge(a, b, dir="both")
             for n in self.nodes:
                 graph.node(n, style="filled", fillcolor=FOCUS_COLOR if n == selected else COLOR)
-            st.graphviz_chart(graph, use_container_width=True)
-            # b64 = base64.b64encode(graph.pipe(format='svg')).decode("utf-8")
-            # html = f"<img style='width: 100%' src='data:image/svg+xml;base64,{b64}'/>"
-            # st.write(html, unsafe_allow_html=True)
+            # st.graphviz_chart(graph, use_container_width=True)
+            b64 = base64.b64encode(graph.pipe(format='svg')).decode("utf-8")
+            html = f"<img style='width: 100%' src='data:image/svg+xml;base64,{b64}'/>"
+            st.write(html, unsafe_allow_html=True)
         # sort alphabetically
         for node in sorted(self.nodes):
             self._add_expand_delete_buttons(node)
+
 
 def main():
     # will initialize the graph from session state
     # (if it exists) otherwise will create a new one
     mindmap = MindMap.load()
 
-    st.sidebar.title("AI Mind Map Generator")
+    st.sidebar.title("AI Maps Generator")
 
-    graph_type = st.sidebar.radio("Type of graph", options=["agraph", "networkx", "graphviz"])
+    graph_type = st.sidebar.radio("Type of graph", options=["agraph", "networkx", "graphviz", "roadmap"])
 
     empty = mindmap.is_empty()
     reset = empty or st.sidebar.checkbox("Reset mind map", value=False)
     query = st.sidebar.text_area(
-        "Describe your mind map" if reset else "Describe how to change your mind map",
+        "Describe your map" if reset else "Describe how to change your mind map",
         value=st.session_state.get("mindmap-input", ""),
         key="mindmap-input",
         height=200
     )
-    submit = st.sidebar.button("Submit")
+    submit = st.sidebar.button("Generate")
 
     valid_submission = submit and query != ""
 
@@ -378,15 +411,20 @@ def main():
     with st.spinner(text="Generating graph..."):
         # if submit and non-empty query, then update graph
         if valid_submission:
-            if reset:
-                # completely new mindmap
-                mindmap.ask_for_initial_graph(query=query)
+            if graph_type == "roadmap":
+                roadmap_text = ask_gpt_for_roadmap(query)
+                if roadmap_text:
+                    visualize_roadmap_as_flowchart(roadmap_text)
             else:
-                # extend existing mindmap
-                mindmap.ask_for_extended_graph(text=query)
-            # since inputs also have to be updated, everything
-            # is rerun
-            st.rerun()
+                if reset:
+                    # completely new mindmap
+                    mindmap.ask_for_initial_graph(query=query)
+                else:
+                    # extend existing mindmap
+                    mindmap.ask_for_extended_graph(text=query)
+                # since inputs also have to be updated, everything
+                # is rerun
+                st.rerun()
         else:
             mindmap.visualize(graph_type)
 
@@ -416,6 +454,7 @@ def check_password():
 
 
 if __name__ == "__main__":
+    # main()
     if not check_password():
         st.stop()
     else:
