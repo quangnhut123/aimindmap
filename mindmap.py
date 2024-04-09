@@ -120,10 +120,10 @@ def ask_gpt_for_roadmap(query: str):
     Based on the goal of '{query}', list up to 10 main steps in simplified form and not numbering format, suitable for use as titles in a flowchart. Focus on clear and concise titles for each step.
     """
     response = client.chat.completions.create(
-        model=OPENAI_MODEL,
-        temperature= 0.5,
+        model = OPENAI_MODEL,
+        temperature = 0,
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "You are a helpful assistant. Answer in same language of goal"},
             {"role": "user", "content": prompt}
         ]
     )
